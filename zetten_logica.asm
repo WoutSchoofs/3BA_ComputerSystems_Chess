@@ -7,28 +7,34 @@ CODESEG
 
 PROC check_zet
     ARG @@moveArrayPtr:dword, @@numberOfVectors:dword, @@columns:dword, @@rows:dword  RETURNS eax
-    USES ebx, ecx, edx, esi, edi
-    mov edx, [@@moveArrayPtr] ;
-    mov eax, 0
-    mov esi, [@@columns]
-    mov edi, [@@rows]
-    mov ecx, [@@numberOfVectors]
+    USES ebx, ecx
+    mov eax, [@@moveArrayPtr]       ; EAX wijst naar de eerste pointer in de tabel
+    mov ecx, [@@numberOfVectors]    ; ECX telt hoeveel vectoren gecontroleerd worden
     cmp ecx, 0
-    jz end_loop
+    jz end_loop                     ; geen vectoren: sla de lus over en retourneer 0
     checkloop:
-        mov ebx, [edx] ;dit bekijkt de i-de pointer in de array, dus de i-de mogelijke vector
-        add edx, 4
-        cmp esi, [ebx]; het eerste element van de array achter die pointer is de kolomverplaatsing
+        mov ebx, [eax]              ; EBX wijst naar de huidige (kolom, rij)-vector
+        add eax, 4                  ; volgende tabelentry; iedere pointer is 4 bytes
+        push eax                    ; bewaar de tabelpointer terwijl EAX vergelijkingswaarden bevat
+        
+        mov eax, [@@columns]
+        cmp eax, [ebx]              ; vergelijk de kolomverplaatsing
         jne next_move
-        cmp edi, [ebx + 4]; het tweede element is de rijverplaatsing
+
+        mov eax, [@@rows]
+        cmp eax, [ebx + 4]          ; het rij-element staat 4 bytes na het kolom-element
         jne next_move
-        mov eax, 1; als deze zet kan geven we als output 1 en moet de rest niet meer gecheckt worden
-        jmp end_loop
+
+        pop eax                     ; herstel de tabelpointer zodat de stack in balans blijft
+        mov eax, 1                  ; vector gevonden: retourneer 1 in EAX
+        jmp end_proc
+
         next_move:
-        inc eax
+        pop eax                     ; herstel de tabelpointer voor de volgende iteratie
     loop checkloop
-    mov eax, 0
     end_loop:
+    mov eax, 0
+    end_proc:
     RET
 ENDP check_zet
 
@@ -37,10 +43,9 @@ start:
     sti
     cld
 
-    mov eax, 4
-    mov esi, -1
-    mov edi, 3
-    call check_zet, offset loper_zetten, eax, esi, edi
+    mov esi, 2
+    mov edi, -1
+    call check_zet, offset loper_zetten, loper_zetten_aantal, esi, edi
     mov ah, 9
     add al, '0'
     mov dl, al
@@ -64,9 +69,11 @@ loper_zetten dd offset loper_linksboven
              dd offset loper_linksonder
              dd offset loper_rechtsonder
              dd offset loper_rechtsboven
-loper_zetten_aantal equ ($-loper_zetten)/4
+loper_zetten_aantal equ 4
 
 
 stack 100
+
+END start
 
 END start
