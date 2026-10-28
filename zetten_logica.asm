@@ -75,5 +75,3 @@ loper_zetten_aantal equ 4
 stack 100
 
 END start
-
-END start
