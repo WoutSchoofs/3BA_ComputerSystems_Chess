@@ -1,31 +1,26 @@
-  # =============================================================================
+# =============================================================================
 # Project makefile
 # =============================================================================
 
 # Settings - Edit the names of the object and executable files.
-obj = zetten_logica.obj DRAW_BOARD.obj
-dest = zetten_logica.exe DRAW_BOARD.exe
+objects1 = DRAW_B~1.obj
+dest = DRAW_B~1.exe
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
 # =============================================================================
 .asm.obj:
-	# use TASM with debug info (stripped anyway by wlink if not used)
-	tasm /ml /m2 /w2 /z /zi $<
+  # use TASM with debug info (stripped anyway by wlink if not used)
+  tasm /ml /m2 /w2 /z /zi $<
 
-all: $(dest)
-
-zetten_logica.exe: zetten_logica.obj
-    wlink option quiet system pmodew name zetten_logica.exe file {zetten_logica.obj}
-
-DRAW_BOARD.exe: DRAW_BOARD.obj
-    wlink option quiet system pmodew name DRAW_BOARD.exe file {DRAW_BOARD.obj}
+$(dest): $(objects1)
+  wlink option quiet system pmodew name $@ file {$(objects1)}
 
 clean: .symbolic
-	del *.obj
-	del $(dest)
+  del *.obj
+  del $(dest)
 
 .silent
-debug: DRAW_BOARD.obj .symbolic
-	wlink debug watcom all option quiet system pmodew name WPO1_1.exe file DRAW_BOARD.obj
-	wd /tr=rsi /li=43 DRAW_BOARD.exe
+debug: $(objects1) .symbolic
+  wlink debug watcom all option quiet system pmodew name $(dest) file {$(objects1)}
+  wd /tr=rsi /li=43 $(dest)

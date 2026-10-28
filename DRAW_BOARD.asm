@@ -42,6 +42,7 @@ PROC DRAW_SQUARE
     mov eax, [@@row]
 	imul eax, eax, 8000      ; 25 board pixels * 320 screen pixels per row.
     add edi, eax
+    add edi, 60
     mov eax, [@@column]
     imul eax, eax, 25
     add edi, eax
@@ -52,7 +53,7 @@ PROC DRAW_SQUARE
     add edx, [@@column]
     test edx, 1
 	jnz squareloop           ; Odd squares keep the brown color (6).
-	mov al, 15               ; Even squares are white.
+	mov al, 90               ; Even squares are white.
 
     squareloop:
 	mov edx, ecx             ; Save the remaining scanline count.
@@ -61,6 +62,7 @@ PROC DRAW_SQUARE
 	mov ecx, edx             ; Restore the outer loop count.
 	add edi, 295             ; Skip to the next screen row: 320 - 25 pixels.
     loop squareloop
+    ret
 ENDP DRAW_SQUARE
 
 PROC terminateProcess
@@ -81,7 +83,19 @@ PROC main
     call setVideoMode, 13h
     ; call fillBackground, 0
 
-    call DRAW_SQUARE, 0, 0
+    mov esi, 0
+@@rowloop_main:
+    mov ebx, 0
+@@columnloop_main:
+    call DRAW_SQUARE, ebx, esi
+    inc ebx
+    cmp ebx, 8
+    jl @@columnloop_main
+
+    inc esi
+    cmp esi, 8
+    jl @@rowloop_main
+
     ; call updateColourPalette, 64
     ; call drawGradient
 
@@ -89,6 +103,15 @@ PROC main
     ; call drawRectangle, 80, 80, 100, 100, 63
     ; call drawRectangle, 1, 1, SCRWIDTH - 2, SCRHEIGHT - 2, 48
 
+@@discard_pending_keys:
+    mov ah, 01h
+    int 16h
+    jz @@wait_for_key
+    mov ah, 00h
+    int 16h
+    jmp @@discard_pending_keys
+
+@@wait_for_key:
     mov ah, 00h
     int 16h
     ; Replace with a wait-for-ESC routine when one is available.
