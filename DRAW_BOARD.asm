@@ -72,31 +72,31 @@ PROC DRAW_SQUARE
     add esi, [@@column]
     test esi, 1
     mov esi, 0
-	jnz rowloop             ; Odd squares keep the brown color.
+	jnz @@rowloop             ; Odd squares keep the brown color.
 	mov al, WHITE_SQUARE   ; Even squares are white.
 
-    rowloop:
+    @@rowloop:
     push ecx                   ; Save the remaining scanline count.
     mov ecx, TILESIDE          ; Number of pixels in the current 25-pixel row.
     mov edx, [@@25X25array]
     add edx, esi
-    columnloop:                ; Fill the scanline using the sprite mask in the array.
+    @@columnloop:                ; Fill the scanline using the sprite mask in the array.
     push eax
     cmp [byte ptr edx], 1
-    jb printpixel
+    jb @@printpixel
     mov al, [@@color]
-    je printpixel
+    je @@printpixel
     mov al, BLACK_OUTLINE
-    printpixel:
+    @@printpixel:
     mov [edi], al
     pop eax
     inc edi
     inc edx
-    loop columnloop  
+    loop @@columnloop  
     add esi, 25
 	pop ecx                    ; Restore the outer row count.
 	add edi, NEXT_ROW_OFFSET    ; Advance to the next screen row: 320 - 25 pixels.
-    loop rowloop
+    loop @@rowloop
     ret
 ENDP DRAW_SQUARE
 
