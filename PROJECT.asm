@@ -74,6 +74,33 @@ PROC printUnsignedInteger
 		ret
 ENDP printUnsignedInteger
 
+PROC printBoard
+	ARG @@arr:dword
+	USES eax, ebx, ecx, edx
+	
+	mov ebx, 0
+	mov ecx, 0
+	
+	@@rowLoop:
+		call getOffset, [@@arr], ebx, ecx
+		mov edx, [eax]
+		call printUnsignedInteger, edx
+		INC ebx
+		cmp ebx, 8
+		jge @@colLoop
+		jmp @@rowLoop
+	
+	@@colLoop:
+		INC ecx
+		cmp ecx, 8
+		jge @@endOfFunction
+		mov ebx, 0
+		jmp @@rowLoop
+	
+	@@endOfFunction:
+	ret
+ENDP printBoard
+
 ; Geeft de memory adress terug op basis van de gegeven coordinaten
 PROC getOffset
 	ARG @@arr:dword, @@row:dword, @@col:dword RETURNS eax
@@ -91,7 +118,7 @@ PROC getElement
 	ARG @@row:dword, @@col:dword RETURNS eax
 	USES ebx
 	
-	; Controle of de gegeven indices
+	; Controle van de gegeven indices
 	cmp [@@row], 0
 	jl @@outOfBounds
 	cmp [@@row], 7
@@ -119,7 +146,7 @@ ENDP getElement
 ; Beweegt een element van een positie naar een andere en laat een 0 achter
 PROC moveElement
 	ARG @@fromRow:dword, @@fromCol:dword, @@toRow:dword, @@toCol:dword
-	USES eax, ebx, ecx, edx
+	USES eax, ebx, ecx
 	
 	call getOffset, offset board, [@@fromRow], [@@fromCol]
 	mov ebx, eax
@@ -131,19 +158,91 @@ PROC moveElement
 	ret
 ENDP moveElement
 
-PROC loopTest
-	ARG @@loopNbr:dword
-	USES ebx, ecx
+
+PROC canMove
+	ARG @@color:dword, @@boardElem:dword, @@row:dword, @@col:dword RETURNS eax
+	USES ebx, edx
 	
-	mov ecx, [@@loopNbr]
-	@@testing:
-		mov ebx, [@@loopNbr]
-		sub ebx, ecx
-		call printUnsignedInteger, ebx
-		loop @@testing
+	mov eax, [@@boardElem]
+	mov dl, 11100000b ; plaats mask voor de drie eerste bits in edx
+	movzx edx, dl
+	AND edx, eax
+	cmp edx, 0
+	jne @@colorCheck ; als niet 0, er is een stuk op die vak
+	cmp eax, 0 ; check of vak leeg is of buiten he bord
+	jne @@outOfBounds
+	call getOffset, offset movement, [@@row], [@@col]
+	mov [byte ptr eax], 1 ; stuk kan op die vak bewegen en check verder in deze richting
+	mov eax, 1 ; stuk kan op deze vak bewegen, doorgeven via eax
+	jmp @@endOfFunction
 	
+	@@colorCheck:
+		mov dl, 00010000b ; plaats mask voor color bit
+		movzx edx, dl
+		and edx, [@@boardElem]
+		cmp edx, [@@color]
+		je @@outOfBounds ; als kleur niet gelijk, vak markeren in movement array, maar return een 0 want loop moet stoppen
+		call getOffset, offset movement, [@@row], [@@col]
+		mov [byte ptr eax], 1 ; stuk kan op die vak bewegen en check verder in deze richting
+		jmp @@outOfBounds
+	
+	@@outOfBounds:
+		mov eax, 0 ; stuk kan op deze vak niet bewegen
+
+	@@endOfFunction:
 	ret
-ENDP loopTest
+ENDP canMove
+
+
+PROC checkTowerMovement
+	ARG @@color:dword, @@row:dword, @@col:dword
+	USES eax, ebx
+	
+	mov ebx, [@@col]
+	@@horLeftCheck:
+		DEC ebx
+		call getElement, [@@row], ebx ; return een byte in al
+		call canMove, [@@color], eax, [@@row], ebx
+		cmp eax, 0
+		je @@horLeftExit ; stuk kan niet verder bewegen in deze richting, ga verder met de andere checks
+		jmp @@horLeftCheck
+
+	@@horLeftExit:
+		mov ebx, [@@col]
+	
+	@@horRightCheck:
+		INC ebx ; enige verschil in deze loop
+		call getElement, [@@row], ebx
+		call canMove, [@@color], eax, [@@row], ebx
+		cmp eax, 0
+		je @@horRigthExit
+		jmp @@horRightCheck
+	
+	@@horRigthExit:
+		mov ebx, [@@row]
+	
+	@@verTopCheck:
+		INC ebx
+		call getElement, ebx, [@@col]
+		call canMove, [@@color], eax, ebx, [@@col]
+		cmp eax, 0
+		je @@verTopExit
+		jmp @@verTopCheck
+	
+	@@verTopExit:
+		mov ebx, [@@row]
+	
+	@@verBotCheck:
+		DEC ebx ; enige verschil hier
+		call getElement, ebx, [@@col]
+		call canMove, [@@color], eax, ebx, [@@col]
+		cmp eax, 0
+		je @@verBotExit
+		jmp @@verBotCheck
+		
+	@@verBotExit:	
+	ret
+ENDP checkTowerMovement
 
 	
 PROC main
@@ -153,31 +252,35 @@ PROC main
 	push ds
 	pop	es
 	
-	call setVideoMode,13h
+	;call setVideoMode,13h
 	
 	; Testen voor het verplaatsen van een element
-	call getElement, 1, 1
-	call printUnsignedInteger, eax
-	call getElement, 1, 2
-	call printUnsignedInteger, eax
-	call moveElement, 1, 1, 1, 2
-	call getElement, 1, 1
-	call printUnsignedInteger, eax
-	call getElement, 1, 2
-	call printUnsignedInteger, eax
+	;call getElement, 1, 1
+	;call printUnsignedInteger, eax
+	;call getElement, 1, 2
+	;call printUnsignedInteger, eax
+	;call moveElement, 1, 1, 1, 2
+	;call getElement, 1, 1
+	;call printUnsignedInteger, eax
+	;call getElement, 1, 2
+	;call printUnsignedInteger, eax
 	
 	; Testen voor het returnen van een 1 i/h  geval van buiten het bord te zijn
-	call getElement, -1, 2
-	call printUnsignedInteger, eax
-	call getElement, 8, 2
-	call printUnsignedInteger, eax
-	call getElement, 1, -2
-	call printUnsignedInteger, eax
-	call getElement, 1, 9
-	call printUnsignedInteger, eax
+	;call getElement, -1, 2
+	;call printUnsignedInteger, eax
+	;call getElement, 8, 2
+	;call printUnsignedInteger, eax
+	;call getElement, 1, -2
+	;call printUnsignedInteger, eax
+	;call getElement, 1, 9
+	;call printUnsignedInteger, eax
 	
-	; Test om een loop te hebben dat van 0 naar 4 gaat ipv 5 naar 1
-	call loopTest, 5
+	call getElement, 4, 4
+	mov bl, 00010000b
+	movzx ebx, bl
+	AND ebx, eax
+	call checkTowerMovement, ebx, 4, 4
+	;call printBoard, offset movement
 	
 	mov ah,0h		; wait for keystroke
     int 16h
@@ -192,7 +295,7 @@ start:
 ; -------------------------------------------------------------------
 DATASEG
 	board db 01000000b, 00100000b, 0, 0, 0, 0, 00110000b, 01010000b, 01100000b, 00100000b, 0, 0, 0, 0, 00110000b, 01110000b, 10000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10010000b, 10100000b, 00100000b, 0, 0, 0, 0, 00110000b, 11010000b, 11000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10110000b, 10000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10010000b, 01100000b, 00100000b, 0, 0, 0, 0, 00110000b, 01110000b, 01000000b, 00100000b, 0, 0, 0, 0, 00110000b, 01010000b
-		
+	
 	movement db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 ; -------------------------------------------------------------------
