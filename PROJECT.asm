@@ -76,12 +76,12 @@ ENDP printUnsignedInteger
 
 ; Geeft de memory adress terug op basis van de gegeven coordinaten
 PROC getOffset
-	ARG @@row:dword, @@col:dword RETURNS eax
+	ARG @@arr:dword, @@row:dword, @@col:dword RETURNS eax
 	
 	mov eax, [@@row]
 	sal eax, 3 ; vermenigvuldiging met 8
 	add eax, [@@col]
-	add eax, offset board
+	add eax, [@@arr]
 	
 	ret
 ENDP getOffset
@@ -102,7 +102,7 @@ PROC getElement
 	jg @@outOfBounds
 	
 	; geraakt door de controles, we zitten inderdaad op het bord
-	call getOffset, [@@row], [@@col]
+	call getOffset, offset board, [@@row], [@@col]
 
 	mov ebx, eax
 	xor eax, eax
@@ -121,10 +121,10 @@ PROC moveElement
 	ARG @@fromRow:dword, @@fromCol:dword, @@toRow:dword, @@toCol:dword
 	USES eax, ebx, ecx, edx
 	
-	call getOffset, [@@fromRow], [@@fromCol]
+	call getOffset, offset board, [@@fromRow], [@@fromCol]
 	mov ebx, eax
 	mov cl, [ebx]
-	call getOffset, [@@toRow], [@@toCol]
+	call getOffset, offset board, [@@toRow], [@@toCol]
 	mov [eax], cl
 	mov [byte ptr ebx], 0
 	
@@ -193,6 +193,7 @@ start:
 DATASEG
 	board db 01000000b, 00100000b, 0, 0, 0, 0, 00110000b, 01010000b, 01100000b, 00100000b, 0, 0, 0, 0, 00110000b, 01110000b, 10000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10010000b, 10100000b, 00100000b, 0, 0, 0, 0, 00110000b, 11010000b, 11000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10110000b, 10000000b, 00100000b, 0, 0, 0, 0, 00110000b, 10010000b, 01100000b, 00100000b, 0, 0, 0, 0, 00110000b, 01110000b, 01000000b, 00100000b, 0, 0, 0, 0, 00110000b, 01010000b
 		
+	movement db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 ; -------------------------------------------------------------------
 ; STACK
