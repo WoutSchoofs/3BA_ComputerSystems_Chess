@@ -172,6 +172,7 @@ PROC set_up_board
     call DRAW_SQUARE, 4, 7, offset king_sprite, WHITE
     call DRAW_SQUARE, 3, 0, offset queen_sprite, BLACK
     call DRAW_SQUARE, 3, 7, offset queen_sprite, WHITE
+    
     ret
 ENDP set_up_board
 
@@ -189,15 +190,6 @@ PROC main
 
     call set_up_board
 
-    ; call updateColourPalette, 64
-    ; call drawGradient
-
-    ; call drawRectangle, 60, 60, 60, 60, 32
-    ; call drawRectangle, 80, 80, 100, 100, 63
-    ; call drawRectangle, 1, 1, SCRWIDTH - 2, SCRHEIGHT - 2, 48
-
-    ; Drain any pending keyboard input so the program only resumes after the next
-    ; key press, matching the original wait-loop behavior.
 @@discard_pending_keys:
     mov ah, 01h
     int 16h
