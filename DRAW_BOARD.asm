@@ -50,7 +50,7 @@ ENDP setVideoMode
 ;   1 => paint using @@color
 ; >1 => paint black (0)
 PROC DRAW_SQUARE
-    ARG @@column:dword, @@row:dword, @@25X25array: dword, @@color: byte
+    ARG @@column:dword, @@row:dword, @@25X25array: dword, @@color:dword
 	USES eax, ecx, edx, edi, esi
 	mov ecx, TILESIDE            ; Number of rows still to paint in this tile.
 
@@ -84,7 +84,7 @@ PROC DRAW_SQUARE
     push eax
     cmp [byte ptr edx], 1
     jb @@printpixel
-    mov al, [@@color]
+    mov al, [byte ptr @@color]
     je @@printpixel
     mov al, BLACK_OUTLINE
     @@printpixel:
@@ -172,9 +172,18 @@ PROC set_up_board
     call DRAW_SQUARE, 4, 7, offset king_sprite, WHITE
     call DRAW_SQUARE, 3, 0, offset queen_sprite, BLACK
     call DRAW_SQUARE, 3, 7, offset queen_sprite, WHITE
-    
+
     ret
 ENDP set_up_board
+
+PROC draw_move
+    ARG @@startcolumn:dword, @@startrow:dword, @@endcolumn:dword, @@endrow:dword, @@piece:dword, @@color:dword
+    call DRAW_SQUARE, [@@startcolumn], [@@startrow], offset empty_sprite, [@@color]
+    call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color]
+    ret
+ENDP draw_move
+
+
 
 PROC main
     ; Initialize the graphics environment and ensure string operations move in
@@ -189,6 +198,14 @@ PROC main
     ; call fillBackground, 0
 
     call set_up_board
+
+    ; Wait for a key, then erase the pawn from its starting square.
+    mov ah, 00h
+    int 16h
+    call draw_move, 4, 6, 4, 4, offset pawn_sprite, WHITE
+    mov ah, 00h
+    int 16h
+    call draw_move, 4, 1, 4, 3, offset pawn_sprite, BLACK
 
 @@discard_pending_keys:
     mov ah, 01h
