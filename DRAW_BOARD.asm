@@ -184,8 +184,8 @@ ENDP set_up_board
 ;does not update board state, only the graphics (might change).
 PROC draw_move
     ARG @@startcolumn:dword, @@startrow:dword, @@endcolumn:dword, @@endrow:dword, @@piece:dword, @@color:dword
-    call DRAW_SQUARE, [@@startcolumn], [@@startrow], offset empty_sprite, [@@color]
-    call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color]
+    call DRAW_SQUARE, [@@startcolumn], [@@startrow], offset empty_sprite, [@@color], BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color], BROWN_SQUARE, WHITE_SQUARE
     ret
 ENDP draw_move
 
