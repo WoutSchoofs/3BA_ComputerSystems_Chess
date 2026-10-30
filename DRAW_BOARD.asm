@@ -28,6 +28,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
     WHITE EQU 15
     BLACK_OUTLINE EQU 0
 
+
 ; These values were previously written directly as literals for background tiles.
     BROWN_SQUARE EQU 6
     WHITE_SQUARE EQU 90
@@ -50,7 +51,7 @@ ENDP setVideoMode
 ; 1 => paint using @@color
 ; >1 => paint black (0)
 PROC DRAW_SQUARE
-    ARG @@column:dword, @@row:dword, @@25X25array: dword, @@color:dword
+    ARG @@column:dword, @@row:dword, @@25X25array: dword, @@color:dword, @@background_color_dark:dword, @@background_color_light:dword
     USES eax, ebx, ecx, edx, edi, esi
 
     ; Convert board coordinates to a byte offset in the framebuffer.
@@ -66,12 +67,12 @@ PROC DRAW_SQUARE
     add edi, eax
 
     ; Alternate colors by the sum of the row and column coordinates.
-    mov bl, BROWN_SQUARE                                                ; Brown is the default for odd squares.
+    mov bl, [byte ptr @@background_color_dark]                                   ; Brown is the default for odd squares.
     mov esi, [@@row]
     add esi, [@@column]
     test esi, 1
     jnz @@startpixelloops                                               ; Odd squares keep the brown color.
-    mov bl, WHITE_SQUARE                                                ; Even squares are white.
+    mov bl, [byte ptr @@background_color_light]                                  ; Even squares are white.
 
 @@startpixelloops:
     mov edx, [@@25X25array]                                             ; Load the address of the sprite mask for this square, outside of the loop so we can increment it as we go.
@@ -117,7 +118,7 @@ PROC set_up_board
 @@setup_column:
     mov ebx, 2
 @@setup_row:
-    call DRAW_SQUARE, esi, ebx, offset empty_sprite, BLACK
+    call DRAW_SQUARE, esi, ebx, offset empty_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
     inc ebx
     cmp ebx, 6
     jl @@setup_row
@@ -128,7 +129,7 @@ PROC set_up_board
     ; Black pawns occupy row 1.
     mov ebx, 0
 @@black_pawns:
-    call DRAW_SQUARE, ebx, 1, offset pawn_sprite, BLACK
+    call DRAW_SQUARE, ebx, 1, offset pawn_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
     inc ebx
     cmp ebx, 8
     jl @@black_pawns
@@ -136,44 +137,48 @@ PROC set_up_board
     ; White pawns occupy row 6.
     mov ebx, 0
 @@white_pawns:
-    call DRAW_SQUARE, ebx, 6, offset pawn_sprite, WHITE
+    call DRAW_SQUARE, ebx, 6, offset pawn_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
     inc ebx
     cmp ebx, 8
     jl @@white_pawns
 
 @@black_rooks:
-    call DRAW_SQUARE, 0, 0, offset rook_sprite, BLACK
-    call DRAW_SQUARE, 7, 0, offset rook_sprite, BLACK
+    call DRAW_SQUARE, 0, 0, offset rook_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 7, 0, offset rook_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
 
 @@white_rooks:
-    call DRAW_SQUARE, 0, 7, offset rook_sprite, WHITE
-    call DRAW_SQUARE, 7, 7, offset rook_sprite, WHITE
+    call DRAW_SQUARE, 0, 7, offset rook_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 7, 7, offset rook_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
 
 @@black_knights:
-    call DRAW_SQUARE, 1, 0, offset knight_sprite, BLACK
-    call DRAW_SQUARE, 6, 0, offset knight_sprite, BLACK
+    call DRAW_SQUARE, 1, 0, offset knight_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 6, 0, offset knight_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
 
 @@white_knights:
-    call DRAW_SQUARE, 1, 7, offset knight_sprite, WHITE
-    call DRAW_SQUARE, 6, 7, offset knight_sprite, WHITE
+    call DRAW_SQUARE, 1, 7, offset knight_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 6, 7, offset knight_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
 
 @@black_bishops:
-    call DRAW_SQUARE, 2, 0, offset bishop_sprite, BLACK
-    call DRAW_SQUARE, 5, 0, offset bishop_sprite, BLACK
+    call DRAW_SQUARE, 2, 0, offset bishop_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 5, 0, offset bishop_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
 
 @@white_bishops:
-    call DRAW_SQUARE, 2, 7, offset bishop_sprite, WHITE
-    call DRAW_SQUARE, 5, 7, offset bishop_sprite, WHITE
+    call DRAW_SQUARE, 2, 7, offset bishop_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 5, 7, offset bishop_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
 
     ; Kings start on the e-file: column 4, with one king for each side.
 @@kings_and_queens:
-    call DRAW_SQUARE, 4, 0, offset king_sprite, BLACK
-    call DRAW_SQUARE, 4, 7, offset king_sprite, WHITE
-    call DRAW_SQUARE, 3, 0, offset queen_sprite, BLACK
-    call DRAW_SQUARE, 3, 7, offset queen_sprite, WHITE
+    call DRAW_SQUARE, 4, 0, offset king_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 4, 7, offset king_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 3, 0, offset queen_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
+    call DRAW_SQUARE, 3, 7, offset queen_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
 
     ret
 ENDP set_up_board
+
+;PROC draw_move_highlight
+;   ARG possible_move_array:dword ARG
+;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, redraw that square with different background colors.
 
 ;draw_move erases the piece from its starting square and draws it in its destination square.
 ;does not update board state, only the graphics (might change).
