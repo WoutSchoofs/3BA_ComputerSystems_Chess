@@ -12,7 +12,7 @@ IDEAL
 P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
-PUBLIC setVideoMode, terminateProcess, set_up_board, draw_move
+PUBLIC setVideoMode, terminateProcess, set_up_board, draw_move, draw_move_highlight
 PUBLIC empty_sprite, king_sprite, pawn_sprite, rook_sprite
 PUBLIC knight_sprite, bishop_sprite, queen_sprite
 
@@ -33,7 +33,7 @@ include "CHESS.INC"
 ; Board colors
     BROWN_SQUARE EQU 6
     WHITE_SQUARE EQU 90
-    RED_OUTLINE EQU 4
+    BLUE_OUTLINE EQU 9
 
 ; -------------------------------------------------------------------
 CODESEG
@@ -178,9 +178,55 @@ PROC set_up_board
     ret
 ENDP set_up_board
 
-
 ;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, redraw that square with different background colors.
+PROC draw_move_highlight
+   ARG possible_move_array:dword
+   USES eax, ebx, esi, ecx, edx, edi
+    mov esi, [possible_move_array]
+    xor ebx, ebx
 
+    @@check_square:
+        cmp ebx, 64
+        jae @@done
+        cmp [byte ptr esi+ebx], 1
+        jne @@next_square
+
+        ; Convert this row-major board index to its board row and column.
+        mov eax, ebx
+        xor edx, edx
+        mov ecx, 8
+        div ecx
+
+        mov edi, VMEMADR
+        imul edx, edx, BOARD_ROW_BYTES
+        add edi, edx
+        add edi, BOARD_X_OFFSET
+        imul eax, eax, TILESIDE
+        add edi, eax
+        mov al, CYAN_OUTLINE
+
+        ; Draw the top edge, the two sides, and the bottom edge.
+        mov ecx, TILESIDE
+        rep stosb
+        add edi, NEXT_ROW_OFFSET
+        mov ecx, TILESIDE-2
+    @@side_rows:
+        mov [edi], al
+        mov [byte ptr edi+TILESIDE-1], al
+        add edi, SCRWIDTH
+        loop @@side_rows
+
+        mov ecx, TILESIDE
+        rep stosb
+
+    @@next_square:
+        inc ebx
+        jmp @@check_square
+
+    @@done:
+    ret
+ENDP draw_move_highlight
+    
 ;draw_move erases the piece from its starting square and draws it in its destination square.
 ;does not update board state, only the graphics (might change).
 PROC draw_move

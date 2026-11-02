@@ -28,6 +28,16 @@ PROC main
     push ds
     pop es
 
+
+    call getElement, 4, 4
+	mov bl, 00010000b
+	movzx ebx, bl
+	AND ebx, eax
+	call checkTowerMovement, ebx, 4, 4
+	;call printBoard, offset movement
+	
+	mov ah,0h		; wait for keystroke
+    int 16h
     call setVideoMode, 13h
     ; call fillBackground, 0
 
@@ -42,30 +52,9 @@ PROC main
     call draw_move, 4, 1, 4, 3, offset pawn_sprite, BLACK
     mov ah, 00h
     int 16h
-    	call getElement, 4, 4
-	mov bl, 00010000b
-	movzx ebx, bl
-	AND ebx, eax
-	call checkTowerMovement, ebx, 4, 4
-	;call printBoard, offset movement
-	
-	mov ah,0h		; wait for keystroke
-    int 16h
-	call terminateProcess
-
-@@discard_pending_keys:
-    mov ah, 01h
-    int 16h
-    jz @@wait_for_key
+    call draw_move_highlight, offset movement
     mov ah, 00h
     int 16h
-    jmp @@discard_pending_keys
-
-@@wait_for_key:
-    mov ah, 00h
-    int 16h
-    ; Replace with a wait-for-ESC routine when one is available.
-
     call terminateProcess
 ENDP main
 
