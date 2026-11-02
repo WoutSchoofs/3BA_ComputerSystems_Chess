@@ -13,7 +13,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-PUBLIC getElement, checkTowerMovement, movement
+PUBLIC getElement, checkTowerMovement
 
 INCLUDE "CHESS.INC"
 
@@ -130,6 +130,9 @@ ENDP getElement
 PROC moveElement
 	ARG @@fromRow:dword, @@fromCol:dword, @@toRow:dword, @@toCol:dword
 	USES eax, ebx, ecx
+	
+	call getOffset, offset movement, [@@fromRow], [@@fromCol]
+	mov [byte ptr eax], 1 ; laat een 1 achter waar stuk was in de movement array => nodig voor het updaten v/h bord
 	
 	call getOffset, offset board, [@@fromRow], [@@fromCol]
 	mov ebx, eax
