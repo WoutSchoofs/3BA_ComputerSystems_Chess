@@ -203,7 +203,7 @@ PROC draw_move_highlight
         add edi, BOARD_X_OFFSET
         imul eax, eax, TILESIDE
         add edi, eax
-        mov al, CYAN_OUTLINE
+        mov al, BLUE_OUTLINE
 
         ; Draw the top edge, the two sides, and the bottom edge.
         mov ecx, TILESIDE
