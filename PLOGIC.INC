@@ -2,6 +2,7 @@ GLOBAL	printUnsignedInteger:PROC, \
 		getOffset:PROC, \
 		getElement:PROC, \
 		moveElement:PROC, \
+		checkTowerMovement:PROC, \
 		checkRookMovement:PROC, \
 		checkBishopMovement:PROC, \
 		checkKnightMovement:PROC, \

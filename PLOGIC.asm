@@ -12,25 +12,19 @@ IDEAL
 P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
-PUBLIC board, movement
+
+PUBLIC getElement, checkTowerMovement
+
+INCLUDE "CHESS.INC"
+
 
 ; compile-time constants (with macros)
-VMEMADR EQU 0A0000h	; video memory address
-SCRWIDTH EQU 320	; screen witdth
-SCRHEIGHT EQU 200	; screen height
+
 
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
 CODESEG		
-
-; Terminate the program.
-PROC terminateProcess
-	USES eax
-	mov	ax,04C00h
-	int 21h
-	ret
-ENDP terminateProcess
 
 PROC printUnsignedInteger
 	ARG @@num:dword
@@ -233,51 +227,6 @@ PROC checkTowerMovement
 	ret
 ENDP checkTowerMovement
 
-	
-PROC main
-	sti
-	cld
-	
-	push ds
-	pop	es
-	
-	;call setVideoMode,13h
-	
-	; Testen voor het verplaatsen van een element
-	;call getElement, 1, 1
-	;call printUnsignedInteger, eax
-	;call getElement, 1, 2
-	;call printUnsignedInteger, eax
-	;call moveElement, 1, 1, 1, 2
-	;call getElement, 1, 1
-	;call printUnsignedInteger, eax
-	;call getElement, 1, 2
-	;call printUnsignedInteger, eax
-	
-	; Testen voor het returnen van een 1 i/h  geval van buiten het bord te zijn
-	;call getElement, -1, 2
-	;call printUnsignedInteger, eax
-	;call getElement, 8, 2
-	;call printUnsignedInteger, eax
-	;call getElement, 1, -2
-	;call printUnsignedInteger, eax
-	;call getElement, 1, 9
-	;call printUnsignedInteger, eax
-	
-	call getElement, 4, 4
-	mov bl, 00010000b
-	movzx ebx, bl
-	AND ebx, eax
-	call checkTowerMovement, ebx, 4, 4
-	;call printBoard, offset movement
-	
-	mov ah,0h		; wait for keystroke
-    int 16h
-	call terminateProcess
-ENDP main
-
-start:
-	call main
 
 ; -------------------------------------------------------------------
 ; DATA
@@ -306,4 +255,4 @@ DATASEG
 ; -------------------------------------------------------------------
 STACK 100h
 
-END main
+END

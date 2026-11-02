@@ -13,13 +13,9 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "DRAWB.INC"
+INCLUDE "PLOGIC.INC"
 INCLUDE "CHESS.INC"
-
-EXTRN setVideoMode:PROC
-EXTRN terminateProcess:PROC
-EXTRN set_up_board:PROC
-EXTRN draw_move:PROC
-EXTRN pawn_sprite:BYTE
 
 CODESEG
 
@@ -44,6 +40,18 @@ PROC main
     mov ah, 00h
     int 16h
     call draw_move, 4, 1, 4, 3, offset pawn_sprite, BLACK
+    mov ah, 00h
+    int 16h
+    	call getElement, 4, 4
+	mov bl, 00010000b
+	movzx ebx, bl
+	AND ebx, eax
+	call checkTowerMovement, ebx, 4, 4
+	;call printBoard, offset movement
+	
+	mov ah,0h		; wait for keystroke
+    int 16h
+	call terminateProcess
 
 @@discard_pending_keys:
     mov ah, 01h

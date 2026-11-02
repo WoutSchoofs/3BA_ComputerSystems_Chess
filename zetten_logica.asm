@@ -39,7 +39,7 @@ PROC check_zet
 ENDP check_zet
 
 
-start:
+
     sti
     cld
 
