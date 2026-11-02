@@ -12,6 +12,13 @@ IDEAL
 P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
+PUBLIC setVideoMode, terminateProcess, set_up_board, draw_move
+PUBLIC empty_sprite, king_sprite, pawn_sprite, rook_sprite
+PUBLIC knight_sprite, bishop_sprite, queen_sprite
+
+INCLUDE "CHESS.INC"
+
+EXTRN board: BYTE
 
 ; Video mode 13h framebuffer dimensions and base address.
     VMEMADR EQU 0A0000h
@@ -24,14 +31,13 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
 ; Color constants used by the board and sprite drawing code.
 ; These are the piece colors used in the sprite mask logic.
-    BLACK EQU 18
-    WHITE EQU 15
     BLACK_OUTLINE EQU 0
 
 
-; These values were previously written directly as literals for background tiles.
+; Board colors
     BROWN_SQUARE EQU 6
     WHITE_SQUARE EQU 90
+    RED_OUTLINE EQU 4
 
 ; -------------------------------------------------------------------
 CODESEG
@@ -176,8 +182,40 @@ PROC set_up_board
     ret
 ENDP set_up_board
 
-;PROC draw_move_highlight
-;   ARG possible_move_array:dword ARG
+PROC draw_move_highlight
+   ARG possible_move_array:dword
+   USES ebx, esi, ecx
+    mov ecx, 64
+    mov esi, [possible_move_array]
+    @@check_square:
+        cmp byte ptr [esi], 1
+        jne @@next_square
+        mov al, RED_OUTLINE
+        @@top_and_bottom_rows:
+        mov ebx, ecx
+        mov ecx, TILESIDE
+        mov edi, VMEMADR
+        rep stosb 
+        mov ecx, TILESIDE
+        dec ecx
+        mov edi, VMEMADR
+        dec edi
+        column_loop:
+           add edi, SCRWIDTH
+           mov [edi], al
+           add edi, TILESIDE
+           mov [edi], al
+           loop column_loop
+        add edi SCRWIDTH
+        mov ecx, TILESIDE
+        rep stosb
+        loop @@check_square
+        mov ecx, ebx
+        @@next_square:
+        inc ESI
+        loop @@check_square
+    ret
+ENDP draw_move_highlight
 ;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, redraw that square with different background colors.
 
 ;draw_move erases the piece from its starting square and draws it in its destination square.
@@ -188,44 +226,6 @@ PROC draw_move
     call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color], BROWN_SQUARE, WHITE_SQUARE
     ret
 ENDP draw_move
-
-PROC main
-    ; Initialize the graphics environment and ensure string operations move in
-    ; the expected direction.
-    sti
-    cld
-
-    push ds
-    pop es
-
-    call setVideoMode, 13h
-    ; call fillBackground, 0
-
-    call set_up_board
-
-    ; Wait for a key, then erase the pawn from its starting square.
-    mov ah, 00h
-    int 16h
-    call draw_move, 4, 6, 4, 4, offset pawn_sprite, WHITE
-    mov ah, 00h
-    int 16h
-    call draw_move, 4, 1, 4, 3, offset pawn_sprite, BLACK
-
-@@discard_pending_keys:
-    mov ah, 01h
-    int 16h
-    jz @@wait_for_key
-    mov ah, 00h
-    int 16h
-    jmp @@discard_pending_keys
-
-@@wait_for_key:
-    mov ah, 00h
-    int 16h
-    ; Replace with a wait-for-ESC routine when one is available.
-
-    call terminateProcess
-ENDP main
 
 ; -------------------------------------------------------------------
 DATASEG
@@ -387,6 +387,4 @@ DATASEG
                     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
-    stack 100
-
-END main
+END
