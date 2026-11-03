@@ -13,7 +13,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-PUBLIC getElement, checkTowerMovement, printBoard, getOffset, moveElement, canMove, movement
+PUBLIC getElement, checkTowerMovement, printBoard, getOffset, moveElement, canMove, movement, board
 
 INCLUDE "CHESS.INC"
 

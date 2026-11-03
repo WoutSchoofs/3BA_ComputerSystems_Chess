@@ -33,26 +33,22 @@ PROC main
 	mov bl, 00010000b
 	movzx ebx, bl
 	AND ebx, eax
-	call checkTowerMovement, ebx, 4, 4
-	call printBoard, offset movement
+	;call checkTowerMovement, ebx, 4, 4
 	
 	mov ah,0h		; wait for keystroke
     int 16h
     call setVideoMode, 13h
     ; call fillBackground, 0
 
-    call set_up_board
+    call draw_board, offset board
+    mov ah, 00h
+    int 16h
+    ;call draw_move_highlight, offset movement
+    ;mov ah, 00h
+    ;int 16h
+    mov [byte ptr board+4], 00100000b
+    call draw_board, offset board
 
-    ; Wait for a key, then erase the pawn from its starting square.
-    mov ah, 00h
-    int 16h
-    call draw_move, 4, 6, 4, 4, offset pawn_sprite, WHITE
-    mov ah, 00h
-    int 16h
-    call draw_move, 4, 1, 4, 3, offset pawn_sprite, BLACK
-    mov ah, 00h
-    int 16h
-    call draw_move_highlight, offset movement
     mov ah, 00h
     int 16h
     call terminateProcess

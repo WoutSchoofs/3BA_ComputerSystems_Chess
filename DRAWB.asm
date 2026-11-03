@@ -12,11 +12,12 @@ IDEAL
 P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
-PUBLIC setVideoMode, terminateProcess, set_up_board, draw_move, draw_move_highlight
+PUBLIC setVideoMode, terminateProcess, draw_board, draw_move_highlight
 PUBLIC empty_sprite, king_sprite, pawn_sprite, rook_sprite
 PUBLIC knight_sprite, bishop_sprite, queen_sprite
 
 include "CHESS.INC"
+include "PLOGIC.INC"
 
 ; Video mode 13h framebuffer dimensions and base address.
     TILESIDE EQU 25
@@ -46,7 +47,18 @@ PROC setVideoMode
 ENDP setVideoMode
 
 PROC getPieceAndColor
-    ARG @@boardarray:dword, @@column:dword, @@row:dword
+    ARG @@element:dword RETURNS esi, edi
+    mov esi, [@@element]
+    shr esi, 4
+    test esi, 1
+    jz piece_is_black
+    piece_is_white:
+        mov edi, WHITE
+        jmp end_getPieceAndColor
+    piece_is_black:
+        mov edi, BLACK
+    end_getPieceAndColor:
+    shr esi, 1
     ret
 ENDP getPieceAndColor
 ; Draw one 25x25 square at the requested board coordinates.
@@ -55,7 +67,7 @@ ENDP getPieceAndColor
 ; 1 => paint using @@color
 ; >1 => paint black (0)
 PROC DRAW_SQUARE
-    ARG @@column:dword, @@row:dword, @@25X25array: dword, @@color:dword, @@background_color_dark:dword, @@background_color_light:dword
+    ARG @@column:dword, @@row:dword, @@25X25array:dword, @@color:dword
     USES eax, ebx, ecx, edx, edi, esi
 
     ; Convert board coordinates to a byte offset in the framebuffer.
@@ -71,12 +83,12 @@ PROC DRAW_SQUARE
     add edi, eax
 
     ; Alternate colors by the sum of the row and column coordinates.
-    mov bl, [byte ptr @@background_color_dark]                                   ; Brown is the default for odd squares.
+    mov bl, BROWN_SQUARE                                   ; Brown is the default for odd squares.
     mov esi, [@@row]
     add esi, [@@column]
     test esi, 1
     jnz @@startpixelloops                                               ; Odd squares keep the brown color.
-    mov bl, [byte ptr @@background_color_light]                                  ; Even squares are white.
+    mov bl, WHITE_SQUARE                                  ; Even squares are white.
 
 @@startpixelloops:
     mov edx, [@@25X25array]                                             ; Load the address of the sprite mask for this square, outside of the loop so we can increment it as we go.
@@ -115,13 +127,25 @@ ENDP terminateProcess
 ; Black starts at the top (rows 0 and 1); white starts at the bottom (rows 6 and 7).
 ; draw square takes the column, row, sprite mask, and color as arguments (in that order).
 PROC draw_board
-    ARG
-    USES ebx, esi
-
-
-
+    ARG @@board_array:dword
+    USES eax, ecx, ebx, edx, esi, edi
+    xor ebx, ebx
+    rowloop:
+    xor ecx, ecx
+    columnloop:
+        call getOffset, [@@board_array], ebx, ecx
+        mov al, [byte ptr eax]
+        movzx eax, al
+        call getPieceAndColor, eax
+        call DRAW_SQUARE, ebx, ecx, [sprite_array+4*esi], edi
+        inc ecx
+        cmp ecx, 8
+        jl columnloop
+    inc ebx
+    cmp ebx, 8
+    jl rowloop
     ret
-ENDP set_up_board
+ENDP draw_board
 
 ;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, redraw that square with different background colors.
 PROC draw_move_highlight
@@ -174,12 +198,7 @@ ENDP draw_move_highlight
     
 ;draw_move erases the piece from its starting square and draws it in its destination square.
 ;does not update board state, only the graphics (might change).
-PROC draw_move
-    ARG @@startcolumn:dword, @@startrow:dword, @@endcolumn:dword, @@endrow:dword, @@piece,@@color:dword
-    call DRAW_SQUARE, [@@startcolumn], [@@startrow], offset empty_sprite, [@@color], BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color], BROWN_SQUARE, WHITE_SQUARE
-    ret
-ENDP draw_move
+
 
 ; -------------------------------------------------------------------
 DATASEG
