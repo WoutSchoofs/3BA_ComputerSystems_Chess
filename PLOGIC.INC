@@ -1,4 +1,5 @@
 GLOBAL	printUnsignedInteger:PROC, \
+		printBoard:PROC,\
 		getOffset:PROC, \
 		getElement:PROC, \
 		moveElement:PROC, \

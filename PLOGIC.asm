@@ -13,7 +13,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-PUBLIC getElement, checkTowerMovement
+PUBLIC getElement, checkTowerMovement, printBoard, getOffset, moveElement, canMove, movement
 
 INCLUDE "CHESS.INC"
 
@@ -49,10 +49,10 @@ PROC printUnsignedInteger
 		int	21h
 		loop @@printDigits
 		
-		mov	dl, 0Dh		; Carriage return.
-		int	21h
-		mov	dl, 0Ah		; New line.
-		int 21h
+		;mov	dl, 0Dh		; Carriage return.
+		;int	21h
+		;mov	dl, 0Ah		; New line.
+		;int 21h
 		
 		ret
 ENDP printUnsignedInteger
@@ -68,12 +68,20 @@ PROC printBoard
 		call getOffset, [@@arr], ebx, ecx
 		mov edx, [eax]
 		call printUnsignedInteger, edx
+		mov ah , 2h
+		mov dl, 20h		; Space.
+		int 21h
 		INC ebx
 		cmp ebx, 8
 		jge @@colLoop
 		jmp @@rowLoop
 	
 	@@colLoop:
+	    mov ah, 2h
+		mov	dl, 0Dh		; Carriage return.
+		int	21h
+		mov	dl, 0Ah		; New line.
+		int 21h
 		INC ecx
 		cmp ecx, 8
 		jge @@endOfFunction
