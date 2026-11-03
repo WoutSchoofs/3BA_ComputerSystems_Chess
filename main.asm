@@ -34,7 +34,7 @@ PROC main
 	movzx ebx, bl
 	AND ebx, eax
 	call checkTowerMovement, ebx, 4, 4
-	;call printBoard, offset movement
+	call printBoard, offset movement
 	
 	mov ah,0h		; wait for keystroke
     int 16h

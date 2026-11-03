@@ -16,8 +16,6 @@ PUBLIC setVideoMode, terminateProcess, set_up_board, draw_move, draw_move_highli
 PUBLIC empty_sprite, king_sprite, pawn_sprite, rook_sprite
 PUBLIC knight_sprite, bishop_sprite, queen_sprite
 
-
-
 include "CHESS.INC"
 
 ; Video mode 13h framebuffer dimensions and base address.
@@ -47,6 +45,10 @@ PROC setVideoMode
     ret
 ENDP setVideoMode
 
+PROC getPieceAndColor
+    ARG @@boardarray:dword, @@column:dword, @@row:dword
+    ret
+ENDP getPieceAndColor
 ; Draw one 25x25 square at the requested board coordinates.
 ; The sprite mask stored in @@25X25array is interpreted as follows:
 ; 0 => paint it in the background color for this square (brown or white)
@@ -112,68 +114,11 @@ ENDP terminateProcess
 ; Draw the board and place the kings and pawns in their starting squares.
 ; Black starts at the top (rows 0 and 1); white starts at the bottom (rows 6 and 7).
 ; draw square takes the column, row, sprite mask, and color as arguments (in that order).
-PROC set_up_board
+PROC draw_board
+    ARG
     USES ebx, esi
 
-    ; Paint empty squares before drawing the pieces.
-    mov esi, 0
-@@setup_column:
-    mov ebx, 2
-@@setup_row:
-    call DRAW_SQUARE, esi, ebx, offset empty_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    inc ebx
-    cmp ebx, 6
-    jl @@setup_row
-    inc esi
-    cmp esi, 8
-    jl @@setup_column
 
-    ; Black pawns occupy row 1.
-    mov ebx, 0
-@@black_pawns:
-    call DRAW_SQUARE, ebx, 1, offset pawn_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    inc ebx
-    cmp ebx, 8
-    jl @@black_pawns
-
-    ; White pawns occupy row 6.
-    mov ebx, 0
-@@white_pawns:
-    call DRAW_SQUARE, ebx, 6, offset pawn_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-    inc ebx
-    cmp ebx, 8
-    jl @@white_pawns
-
-@@black_rooks:
-    call DRAW_SQUARE, 0, 0, offset rook_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 7, 0, offset rook_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-
-@@white_rooks:
-    call DRAW_SQUARE, 0, 7, offset rook_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 7, 7, offset rook_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-
-@@black_knights:
-    call DRAW_SQUARE, 1, 0, offset knight_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 6, 0, offset knight_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-
-@@white_knights:
-    call DRAW_SQUARE, 1, 7, offset knight_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 6, 7, offset knight_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-
-@@black_bishops:
-    call DRAW_SQUARE, 2, 0, offset bishop_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 5, 0, offset bishop_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-
-@@white_bishops:
-    call DRAW_SQUARE, 2, 7, offset bishop_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 5, 7, offset bishop_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-
-    ; Kings start on the e-file: column 4, with one king for each side.
-@@kings_and_queens:
-    call DRAW_SQUARE, 4, 0, offset king_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 4, 7, offset king_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 3, 0, offset queen_sprite, BLACK, BROWN_SQUARE, WHITE_SQUARE
-    call DRAW_SQUARE, 3, 7, offset queen_sprite, WHITE, BROWN_SQUARE, WHITE_SQUARE
 
     ret
 ENDP set_up_board
@@ -230,7 +175,7 @@ ENDP draw_move_highlight
 ;draw_move erases the piece from its starting square and draws it in its destination square.
 ;does not update board state, only the graphics (might change).
 PROC draw_move
-    ARG @@startcolumn:dword, @@startrow:dword, @@endcolumn:dword, @@endrow:dword, @@piece:dword, @@color:dword
+    ARG @@startcolumn:dword, @@startrow:dword, @@endcolumn:dword, @@endrow:dword, @@piece,@@color:dword
     call DRAW_SQUARE, [@@startcolumn], [@@startrow], offset empty_sprite, [@@color], BROWN_SQUARE, WHITE_SQUARE
     call DRAW_SQUARE, [@@endcolumn], [@@endrow], [@@piece], [@@color], BROWN_SQUARE, WHITE_SQUARE
     ret
@@ -240,6 +185,9 @@ ENDP draw_move
 DATASEG
     empty_sprite    db 625 dup (0)
     ; 0 is the background color for the square, 1 is the color of the piece, 2 is black (outline).
+
+    sprite_array dd offset empty_sprite, offset pawn_sprite, offset rook_sprite, offset knight_sprite, offset bishop_sprite, offset queen_sprite, offset king_sprite
+
     king_sprite     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                     db 0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0
