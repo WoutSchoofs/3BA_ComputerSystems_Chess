@@ -46,6 +46,7 @@ PROC setVideoMode
     ret
 ENDP setVideoMode
 
+;   takes a coded element of a square, decodes into usable data e.g. 00100000b, 001 means it is a pawn the next bit being zero means its a black piece. next four bits arent used here
 PROC getPieceAndColor
     ARG @@element:dword RETURNS esi, edi
     mov esi, [@@element]
@@ -61,6 +62,7 @@ PROC getPieceAndColor
     shr esi, 1
     ret
 ENDP getPieceAndColor
+
 ; Draw one 25x25 square at the requested board coordinates.
 ; The sprite mask stored in @@25X25array is interpreted as follows:
 ; 0 => paint it in the background color for this square (brown or white)
@@ -115,6 +117,7 @@ PROC DRAW_SQUARE
     ret
 ENDP DRAW_SQUARE
 
+;   used to stop program fromfreezing at the end
 PROC terminateProcess
     USES eax
     call setVideoMode, 03h
@@ -123,9 +126,7 @@ PROC terminateProcess
     ret
 ENDP terminateProcess
 
-; Draw the board and place the kings and pawns in their starting squares.
-; Black starts at the top (rows 0 and 1); white starts at the bottom (rows 6 and 7).
-; draw square takes the column, row, sprite mask, and color as arguments (in that order).
+;   draws the given board state
 PROC draw_board
     ARG @@board_array:dword
     USES eax, ecx, ebx, edx, esi, edi
@@ -133,11 +134,10 @@ PROC draw_board
     rowloop:
     xor ecx, ecx
     columnloop:
-        call getOffset, [@@board_array], ebx, ecx
-        mov al, [byte ptr eax]
-        movzx eax, al
-        call getPieceAndColor, eax
-        call DRAW_SQUARE, ebx, ecx, [sprite_array+4*esi], edi
+        call getOffset, [@@board_array], ebx, ecx                     ;puts the total offset of [ebx, ebc] square in eax                                        
+        movzx eax, [byte ptr eax]                                     ;puts the byte stored in [ebx, ebc] square in lowest byte of eax, other bytes in eax are empty
+        call getPieceAndColor, eax                                    ;puts the piece code in esi and the color in edi
+        call DRAW_SQUARE, ebx, ecx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
         inc ecx
         cmp ecx, 8
         jl columnloop
@@ -147,7 +147,7 @@ PROC draw_board
     ret
 ENDP draw_board
 
-;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, redraw that square with different background colors.
+;   Here follows a loop that checks for each of the board squares whether its corresponding entry in the possible_move_array is set to 1. If so, draw a blue border around the square
 PROC draw_move_highlight
    ARG possible_move_array:dword
    USES eax, ebx, esi, ecx, edx, edi
@@ -196,10 +196,6 @@ PROC draw_move_highlight
     ret
 ENDP draw_move_highlight
     
-;draw_move erases the piece from its starting square and draws it in its destination square.
-;does not update board state, only the graphics (might change).
-
-
 ; -------------------------------------------------------------------
 DATASEG
     empty_sprite    db 625 dup (0)
