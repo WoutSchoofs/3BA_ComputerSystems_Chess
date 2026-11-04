@@ -66,7 +66,8 @@ PROC printBoard
 	
 	@@rowLoop:
 		call getOffset, [@@arr], ebx, ecx
-		mov edx, [eax]
+		mov dl, [byte ptr eax]
+		movzx edx, dl
 		call printUnsignedInteger, edx
 		mov ah , 2h
 		mov dl, 20h		; Space.
@@ -185,7 +186,7 @@ PROC canMove
 ENDP canMove
 
 
-PROC canMovePawn
+PROC canMoveSidewaysPawn
 	ARG @@color:dword, @@boardElem:dword, @@row:dword, @@col:dword
 	USES eax, ebx, edx
 	
@@ -206,7 +207,29 @@ PROC canMovePawn
 	
 	@@endOfFunction:
 	ret
-ENDP canMovePawn
+ENDP canMoveSidewaysPawn
+
+
+; Helper functie, pion kan niet naar voren bewegen ongeacht de kleur van wat voor hem staat
+PROC canMoveForwardPawn
+	ARG @@boardElem:dword, @@row:dword, @@col:dword
+	USES ebx, edx
+	
+	mov eax, [@@boardElem]
+	mov dl, 11100000b ; plaats mask voor de drie eerste bits in edx
+	movzx edx, dl
+	AND edx, eax
+	cmp edx, 0
+	jne @@endOfFunction ; als niet 0, er is een stuk op die vak
+	cmp eax, 0 ; check of vak leeg is of buiten he bord
+	jne @@endOfFunction
+	call getOffset, offset movement, [@@row], [@@col]
+	mov [byte ptr eax], 1 ; stuk kan op die vak bewegen en check verder in deze richting
+	mov eax, 1 ; stuk kan op deze vak bewegen, doorgeven via eax
+
+	@@endOfFunction:
+	ret
+ENDP canMoveForwardPawn
 
 
 ; Checkt vakken of het spelbord in het patroon van een toren
@@ -386,7 +409,7 @@ PROC checkPawnMovement
 	ARG @@firstMove:dword, @@color:dword, @@row:dword, @@col:dword
 	USES eax, ebx, ecx, edx
 	
-	mov ebx, [@@row]
+	mov ebx, [@@col]
 	mov ecx, [@@color]
 	mov dl, 00000000b
 	movzx edx, dl ; check of stuk zwart is
@@ -399,15 +422,15 @@ PROC checkPawnMovement
 		INC ebx
 	
 	@@firstCheck:
-		mov ecx, [@@col]
-		call getElement, ebx, ecx
-		call canMove, [@@color], eax, ebx, ecx
+		mov ecx, [@@row]
+		call getElement, ecx, ebx
+		call canMoveForwardPawn, eax, ecx, ebx
 		DEC ecx
-		call getElement, ebx, ecx
-		call canMovePawn, [@@color], eax, ebx, ecx
+		call getElement, ecx, ebx
+		call canMoveSidewaysPawn, [@@color], eax, ecx, ebx
 		add ecx, 2
 		call getElement, ebx, ecx
-		call canMovePawn, [@@color], eax, ebx, ecx
+		call canMoveSidewaysPawn, [@@color], eax, ecx, ebx
 	
 	mov ecx, [@@firstMove]
 	mov dl, 00001000b
@@ -427,8 +450,8 @@ PROC checkPawnMovement
 		INC ebx
 	
 	@@secondCheck:
-		call getElement, ebx, [@@col]
-		call canMove, [@@color], eax, ebx, [@@col]
+		call getElement, [@@row], ebx
+		call canMoveForwardPawn, eax, [@@row], ebx
 	
 	@@endOfFunction:
 	ret
