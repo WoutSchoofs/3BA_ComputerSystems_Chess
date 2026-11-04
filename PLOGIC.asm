@@ -57,6 +57,7 @@ PROC printUnsignedInteger
 		ret
 ENDP printUnsignedInteger
 
+
 PROC printBoard
 	ARG @@arr:dword
 	USES eax, ebx, ecx, edx
@@ -96,10 +97,11 @@ ENDP printBoard
 ; Geeft de memory adress terug op basis van de gegeven coordinaten
 PROC getOffset
 	ARG @@arr:dword, @@row:dword, @@col:dword RETURNS eax
-	
-	mov eax, [@@row]
+
+	mov eax, 7
+	sub eax, [@@col]
 	sal eax, 3 ; vermenigvuldiging met 8
-	add eax, [@@col]
+	add eax, [@@row]
 	add eax, [@@arr]
 	
 	ret

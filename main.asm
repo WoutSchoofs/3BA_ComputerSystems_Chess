@@ -33,10 +33,11 @@ PROC main
 	mov bl, 00010000b
 	movzx ebx, bl
 	AND ebx, eax
-	mov cl, 00001000b
-	movzx ecx, cl
-	call checkPawnMovement, ecx, ebx, 5, 5
+	;mov cl, 00001000b
+	;movzx ecx, cl
+	call checkRookMovement, ebx, 3, 6
 	call printBoard, offset movement
+	;call printBoard, offset board
 	
 	mov ah,0h		; wait for keystroke
     int 16h
