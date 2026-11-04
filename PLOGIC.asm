@@ -62,20 +62,20 @@ PROC printBoard
 	ARG @@arr:dword
 	USES eax, ebx, ecx, edx
 	
-	mov ebx, 0
+	mov ebx, 7
 	mov ecx, 0
 	
 	@@rowLoop:
-		call getOffset, [@@arr], ebx, ecx
+		call getOffset, [@@arr], ecx, ebx
 		mov dl, [byte ptr eax]
 		movzx edx, dl
 		call printUnsignedInteger, edx
 		mov ah , 2h
 		mov dl, 20h		; Space.
 		int 21h
-		INC ebx
-		cmp ebx, 8
-		jge @@colLoop
+		dec ebx
+		cmp ebx, 0
+		jle @@colLoop
 		jmp @@rowLoop
 	
 	@@colLoop:
@@ -87,7 +87,7 @@ PROC printBoard
 		INC ecx
 		cmp ecx, 8
 		jge @@endOfFunction
-		mov ebx, 0
+		mov ebx, 7
 		jmp @@rowLoop
 	
 	@@endOfFunction:
