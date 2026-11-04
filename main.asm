@@ -33,7 +33,8 @@ PROC main
 	mov bl, 00010000b
 	movzx ebx, bl
 	AND ebx, eax
-	;call checkTowerMovement, ebx, 4, 4
+	;call checkRookMovement, ebx, 4, 4
+	;call printBoard, offset movement
 	
 	mov ah,0h		; wait for keystroke
     int 16h
