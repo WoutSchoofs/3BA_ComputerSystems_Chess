@@ -137,7 +137,7 @@ PROC draw_board
         call getOffset, [@@board_array], ebx, ecx                     ;puts the total offset of [ebx, ebc] square in eax                                        
         movzx eax, [byte ptr eax]                                     ;puts the byte stored in [ebx, ebc] square in lowest byte of eax, other bytes in eax are empty
         call getPieceAndColor, eax                                    ;puts the piece code in esi and the color in edi
-        call DRAW_SQUARE, ebx, ecx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
+        call DRAW_SQUARE, ecx, ebx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
         inc ecx
         cmp ecx, 8
         jl columnloop
@@ -167,11 +167,11 @@ PROC draw_move_highlight
         div ecx
 
         mov edi, VMEMADR
-        imul eax, eax, BOARD_ROW_BYTES
-        add edi, eax
-        add edi, BOARD_X_OFFSET
-        imul edx, edx, TILESIDE
+        imul edx, edx, BOARD_ROW_BYTES
         add edi, edx
+        add edi, BOARD_X_OFFSET
+        imul eax, eax, TILESIDE
+        add edi, eax
         mov al, BLUE_OUTLINE
 
         ; Draw the top edge, the two sides, and the bottom edge.
