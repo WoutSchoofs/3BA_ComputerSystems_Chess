@@ -46,9 +46,9 @@ PROC main
     call draw_board, offset board
     mov ah, 00h
     int 16h
-    ;call draw_move_highlight, offset movement
-    ;mov ah, 00h
-    ;int 16h
+    call draw_move_highlight, offset movement
+    mov ah, 00h
+    int 16h
     mov [byte ptr board+4], 00100000b
     call draw_board, offset board
 

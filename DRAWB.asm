@@ -167,11 +167,11 @@ PROC draw_move_highlight
         div ecx
 
         mov edi, VMEMADR
-        imul edx, edx, BOARD_ROW_BYTES
-        add edi, edx
-        add edi, BOARD_X_OFFSET
-        imul eax, eax, TILESIDE
+        imul eax, eax, BOARD_ROW_BYTES
         add edi, eax
+        add edi, BOARD_X_OFFSET
+        imul edx, edx, TILESIDE
+        add edi, edx
         mov al, BLUE_OUTLINE
 
         ; Draw the top edge, the two sides, and the bottom edge.
