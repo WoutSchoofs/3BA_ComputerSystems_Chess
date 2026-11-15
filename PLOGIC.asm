@@ -62,7 +62,7 @@ PROC printBoard
 	ARG @@arr:dword
 	USES eax, ebx, ecx, edx
 	
-	mov ebx, 7
+	mov ebx, 0
 	mov ecx, 0
 	
 	@@rowLoop:
@@ -73,9 +73,9 @@ PROC printBoard
 		mov ah , 2h
 		mov dl, 20h		; Space.
 		int 21h
-		dec ebx
-		cmp ebx, 0
-		jle @@colLoop
+		inc ebx
+		cmp ebx, 8
+		jge @@colLoop
 		jmp @@rowLoop
 	
 	@@colLoop:
@@ -87,7 +87,7 @@ PROC printBoard
 		INC ecx
 		cmp ecx, 8
 		jge @@endOfFunction
-		mov ebx, 7
+		mov ebx, 0
 		jmp @@rowLoop
 	
 	@@endOfFunction:
@@ -98,10 +98,9 @@ ENDP printBoard
 PROC getOffset
 	ARG @@arr:dword, @@row:dword, @@col:dword RETURNS eax
 
-	mov eax, 7
-	sub eax, [@@col]
+	mov eax, [@@row]
 	sal eax, 3 ; vermenigvuldiging met 8
-	add eax, [@@row]
+	add eax, [@@col]
 	add eax, [@@arr]
 	
 	ret

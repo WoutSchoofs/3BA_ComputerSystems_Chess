@@ -35,7 +35,7 @@ PROC main
 	AND ebx, eax
 	;mov cl, 00001000b
 	;movzx ecx, cl
-	call checkRookMovement, ebx, 3, 6
+	call checkRookMovement, ebx, 5, 3
 	call printBoard, offset movement
 	;call printBoard, offset board
 	

@@ -134,7 +134,7 @@ PROC draw_board
     rowloop:
     xor ecx, ecx
     columnloop:
-        call getOffset, [@@board_array], ebx, ecx                     ;puts the total offset of [ebx, ebc] square in eax                                        
+        call getOffset, [@@board_array], ecx, ebx                     ;puts the total offset of [ebx, ebc] square in eax                                        
         movzx eax, [byte ptr eax]                                     ;puts the byte stored in [ebx, ebc] square in lowest byte of eax, other bytes in eax are empty
         call getPieceAndColor, eax                                    ;puts the piece code in esi and the color in edi
         call DRAW_SQUARE, ecx, ebx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
