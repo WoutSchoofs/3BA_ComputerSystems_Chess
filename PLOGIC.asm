@@ -13,7 +13,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-PUBLIC getElement, checkRookMovement, checkBishopMovement, checkKnightMovement, checkKingMovement, checkPawnMovement, printBoard, getOffset, moveElement, movement, board
+PUBLIC getElement, getMovementElem, clearMovement, checkRookMovement, checkBishopMovement, checkKnightMovement, checkKingMovement, checkPawnMovement, printBoard, getOffset, moveElement, movement, board
 
 INCLUDE "CHESS.INC"
 
@@ -135,6 +135,35 @@ PROC getElement
 	@@endOfFunction:
 	ret
 ENDP getElement
+
+
+PROC getMovementElem
+	ARG @@row:dword, @@col:dword RETURNS eax
+	USES ebx
+	
+	call getOffset, offset board, [@@row], [@@col]
+
+	mov ebx, eax
+	xor eax, eax
+	mov al, [ebx]
+	
+	ret
+ENDP getMovementElem
+
+
+PROC clearMovement
+	ARG @@none:dword
+	USES edi, eax, ecx
+	
+	cld
+	mov edi, offset movement
+	xor eax, eax
+	mov ecx, 16
+	rep stosd
+	
+	ret
+ENDP clearMovement
+
 
 ; Beweegt een element van een positie naar een andere en laat een 0 achter
 PROC moveElement
