@@ -52,13 +52,13 @@ PROC getPieceAndColor
     mov esi, [@@element]
     shr esi, 4
     test esi, 1
-    jz piece_is_black
-    piece_is_white:
+    jz @@black
+    @@piece_is_white:
         mov edi, WHITE
-        jmp end_getPieceAndColor
-    piece_is_black:
+        jmp @@end_getPieceAndColor
+    @@black:
         mov edi, BLACK
-    end_getPieceAndColor:
+    @@end_getPieceAndColor:
     shr esi, 1
     ret
 ENDP getPieceAndColor
@@ -131,19 +131,19 @@ PROC draw_board
     ARG @@board_array:dword
     USES eax, ecx, ebx, edx, esi, edi
     xor ebx, ebx
-    rowloop:
+    @@rowloop:
     xor ecx, ecx
-    columnloop:
+    @@columnloop:
         call getOffset, [@@board_array], ebx, ecx                     ;puts the total offset of [ebx, ebc] square in eax                                        
         movzx eax, [byte ptr eax]                                     ;puts the byte stored in [ebx, ebc] square in lowest byte of eax, other bytes in eax are empty
         call getPieceAndColor, eax                                    ;puts the piece code in esi and the color in edi
         call DRAW_SQUARE, ecx, ebx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
         inc ecx
         cmp ecx, 8
-        jl columnloop
+        jl @@columnloop
     inc ebx
     cmp ebx, 8
-    jl rowloop
+    jl @@rowloop
     ret
 ENDP draw_board
 
