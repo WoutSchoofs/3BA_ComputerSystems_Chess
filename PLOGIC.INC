@@ -2,6 +2,8 @@ GLOBAL	printUnsignedInteger:PROC, \
 		printBoard:PROC,\
 		getOffset:PROC, \
 		getElement:PROC, \
+		getMovementElem:PROC, \
+		clearMovement:PROC, \
 		moveElement:PROC, \
 		checkRookMovement:PROC, \
 		checkBishopMovement:PROC, \
