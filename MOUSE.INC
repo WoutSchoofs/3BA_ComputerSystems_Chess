@@ -42,4 +42,5 @@ GLOBAL 	mouse_install:PROC, \
        	mouse_present:PROC, \
 		calculateIndex:PROC, \
 		getMouseInput:PROC, \
-		drawMouse:PROC
+		drawMouse:PROC, \
+		eraseMouse:PROC

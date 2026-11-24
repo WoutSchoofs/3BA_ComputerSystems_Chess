@@ -9,7 +9,16 @@ GLOBAL	printUnsignedInteger:PROC, \
 		checkBishopMovement:PROC, \
 		checkKnightMovement:PROC, \
 		checkKingMovement:PROC, \
-		checkPawnMovement:PROC
+		checkPawnMovement:PROC, \
+		generatePieceMoves:PROC, \
+		filterLegalMoves:PROC, \
+		getGameStatus:PROC, \
+		initializeDrawTracking:PROC, \
+		recordPosition:PROC, \
+		getDrawStatus:PROC, \
+		promotePawn:PROC
 		
 GLOBAL board:BYTE
 GLOBAL movement:BYTE
+GLOBAL checked_king_row:DWORD, checked_king_col:DWORD
+GLOBAL halfmove_clock:DWORD

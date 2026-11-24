@@ -12,7 +12,7 @@ IDEAL
 P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
-PUBLIC setVideoMode, terminateProcess, draw_board, draw_move_highlight
+PUBLIC setVideoMode, terminateProcess, draw_board, draw_move_highlight, draw_check_highlight, draw_promotion_menu
 PUBLIC empty_sprite, king_sprite, pawn_sprite, rook_sprite
 PUBLIC knight_sprite, bishop_sprite, queen_sprite
 
@@ -33,6 +33,9 @@ include "PLOGIC.INC"
     BROWN_SQUARE EQU 6
     WHITE_SQUARE EQU 90
     BLUE_OUTLINE EQU 9
+    RED_CHECK_OUTLINE EQU 12
+    SIDEBAR_COLOR EQU 238
+    PROMOTION_BORDER_COLOR EQU 14
 
 ; -------------------------------------------------------------------
 CODESEG
@@ -69,7 +72,7 @@ ENDP getPieceAndColor
 ; 1 => paint using @@color
 ; >1 => paint black (0)
 PROC DRAW_SQUARE
-    ARG @@column:dword, @@row:dword, @@25X25array:dword, @@color:dword
+    ARG  @@row:dword,@@column:dword, @@25X25array:dword, @@color:dword
     USES eax, ebx, ecx, edx, edi, esi
 
     ; Convert board coordinates to a byte offset in the framebuffer.
@@ -130,6 +133,22 @@ ENDP terminateProcess
 PROC draw_board
     ARG @@board_array:dword
     USES eax, ecx, ebx, edx, esi, edi
+
+    ; Repaint the side bands so the previous mouse outline is erased
+    ; even when it was outside the board.
+    mov edi, VMEMADR
+    mov ecx, SCRHEIGHT
+    @@sideline_row:
+        push ecx
+        mov al, SIDEBAR_COLOR
+        mov ecx, BOARD_X_OFFSET
+        rep stosb
+        add edi, TILESIDE * 8
+        mov ecx, SCRWIDTH - BOARD_X_OFFSET - TILESIDE * 8
+        rep stosb
+        pop ecx
+        loop @@sideline_row
+
     xor ebx, ebx
     @@rowloop:
     xor ecx, ecx
@@ -137,7 +156,7 @@ PROC draw_board
         call getOffset, [@@board_array], ebx, ecx                     ;puts the total offset of [ebx, ebc] square in eax                                        
         movzx eax, [byte ptr eax]                                     ;puts the byte stored in [ebx, ebc] square in lowest byte of eax, other bytes in eax are empty
         call getPieceAndColor, eax                                    ;puts the piece code in esi and the color in edi
-        call DRAW_SQUARE, ecx, ebx, [sprite_array+4*esi], edi         ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
+        call DRAW_SQUARE, ecx, ebx, [sprite_array+4*esi], edi     ;we have stored the possible sprites in an array, where eacht piece is at the offset that matches its code to the start of the array, so +4*esi finds the correct sprite
         inc ecx
         cmp ecx, 8
         jl @@columnloop
@@ -195,6 +214,115 @@ PROC draw_move_highlight
     @@done:
     ret
 ENDP draw_move_highlight
+
+PROC draw_check_highlight
+    ARG @@row:dword, @@col:dword
+    USES eax, ecx, edx, edi
+
+    mov edi, VMEMADR
+    mov eax, [@@col]
+    imul eax, eax, TILESIDE
+    imul eax, eax, SCRWIDTH
+    add edi, eax
+    mov eax, [@@row]
+    imul eax, eax, TILESIDE
+    add edi, BOARD_X_OFFSET
+    add edi, eax
+    mov al, RED_CHECK_OUTLINE
+
+    mov ecx, TILESIDE
+    rep stosb
+    add edi, NEXT_ROW_OFFSET
+    mov edx, TILESIDE-2
+    @@side_rows:
+        mov [edi], al
+        mov [byte ptr edi+TILESIDE-1], al
+        add edi, SCRWIDTH
+        dec edx
+        jnz @@side_rows
+
+    mov ecx, TILESIDE
+    rep stosb
+    ret
+ENDP draw_check_highlight
+
+PROC DRAW_PROMOTION_OPTION
+    ARG @@x0:dword, @@y0:dword, @@sprite:dword, @@color:dword
+    USES eax, ebx, ecx, edx, esi, edi
+
+    mov edi, VMEMADR
+    mov eax, [@@y0]
+    imul eax, eax, SCRWIDTH
+    add edi, eax
+    add edi, [@@x0]
+    mov esi, [@@sprite]
+    mov ebx, TILESIDE
+    @@rowloop:
+        push ebx
+        mov ecx, TILESIDE
+        @@columnloop:
+            mov al, [esi]
+            inc esi
+            test al, al
+            jz @@next_pixel
+            cmp al, 1
+            je @@piece_pixel
+            mov al, BLACK_OUTLINE
+            jmp @@plot_pixel
+        @@piece_pixel:
+            mov al, [byte ptr @@color]
+        @@plot_pixel:
+            mov [edi], al
+        @@next_pixel:
+            inc edi
+            loop @@columnloop
+        pop ebx
+        add edi, SCRWIDTH-TILESIDE
+        dec ebx
+        jnz @@rowloop
+
+    mov edi, VMEMADR
+    mov eax, [@@y0]
+    dec eax
+    imul eax, eax, SCRWIDTH
+    add edi, eax
+    mov eax, [@@x0]
+    dec eax
+    add edi, eax
+    mov al, PROMOTION_BORDER_COLOR
+    mov ecx, TILESIDE+2
+    rep stosb
+    add edi, SCRWIDTH-(TILESIDE+2)
+    mov edx, TILESIDE
+    @@border_sides:
+        mov [edi], al
+        mov [byte ptr edi+TILESIDE+1], al
+        add edi, SCRWIDTH
+        dec edx
+        jnz @@border_sides
+    mov ecx, TILESIDE+2
+    rep stosb
+    ret
+ENDP DRAW_PROMOTION_OPTION
+
+PROC draw_promotion_menu
+    ARG @@color:dword
+    USES ebx, eax
+
+    mov ebx, BLACK
+    cmp [@@color], 00010000b
+    jne @@draw_choices
+    mov ebx, WHITE
+@@draw_choices:
+    call DRAW_PROMOTION_OPTION, PROMOTION_MENU_X, PROMOTION_MENU_Y, offset queen_sprite, ebx
+    mov eax, PROMOTION_MENU_Y + PROMOTION_MENU_SPACING
+    call DRAW_PROMOTION_OPTION, PROMOTION_MENU_X, eax, offset rook_sprite, ebx
+    mov eax, PROMOTION_MENU_Y + PROMOTION_MENU_SPACING * 2
+    call DRAW_PROMOTION_OPTION, PROMOTION_MENU_X, eax, offset bishop_sprite, ebx
+    mov eax, PROMOTION_MENU_Y + PROMOTION_MENU_SPACING * 3
+    call DRAW_PROMOTION_OPTION, PROMOTION_MENU_X, eax, offset knight_sprite, ebx
+    ret
+ENDP draw_promotion_menu
     
 ; -------------------------------------------------------------------
 DATASEG

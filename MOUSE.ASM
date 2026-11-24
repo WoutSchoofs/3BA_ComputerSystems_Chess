@@ -48,6 +48,12 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 INCLUDE "mouse.inc"
 INCLUDE "chess.inc"
 
+MOUSE_CURSOR_WIDTH EQU 10
+MOUSE_CURSOR_HEIGHT EQU 12
+MOUSE_BOARD_X_OFFSET EQU 60
+MOUSE_TILE_SIZE EQU 25
+MOUSE_BOARD_SIZE EQU MOUSE_TILE_SIZE * 8
+
 ;=============================================================================
 ; Uninitialized DATA
 ;=============================================================================
@@ -59,6 +65,23 @@ UDATASEG
 DATASEG
 
 custom_mouse_handler    dd ?
+mouse_background db MOUSE_CURSOR_WIDTH * MOUSE_CURSOR_HEIGHT dup (0)
+mouse_previous_x dd 0
+mouse_previous_y dd 0
+mouse_visible db 0
+
+mouse_arrow db 2,0,0,0,0,0,0,0,0,0
+            db 2,2,0,0,0,0,0,0,0,0
+            db 2,1,2,0,0,0,0,0,0,0
+            db 2,1,1,2,0,0,0,0,0,0
+            db 2,1,1,1,2,0,0,0,0,0
+            db 2,1,1,1,1,2,0,0,0,0
+            db 2,1,1,1,1,1,2,0,0,0
+            db 2,1,1,1,1,1,1,2,0,0
+            db 2,1,1,1,1,1,1,2,0,0
+            db 2,1,1,1,1,2,2,0,0,0
+            db 2,1,1,2,2,0,0,0,0,0
+            db 2,2,2,0,0,0,0,0,0,0
 
 ;=============================================================================
 ; CODE
@@ -178,23 +201,30 @@ ENDP mouse_uninstall
 PROC calculateIndex
 	ARG @@horPos:dword, @@verPos:dword RETURNS ecx, edx
 	USES eax, ebx
-	
-	movzx edx,dx ;draw click
-	sar cx,1; X-coordinate for 2D display grid (divide by 2)
-	movzx ecx,cx
-	sub ecx, 60
-	
-	xor edx, edx
+
+	; The board is drawn rotated: screen X maps to board row, screen Y to column.
 	mov eax, [@@horPos]
-	mov ebx, 25
+	cmp eax, MOUSE_BOARD_X_OFFSET
+	jb @@outside_board
+	sub eax, MOUSE_BOARD_X_OFFSET
+	cmp eax, MOUSE_BOARD_SIZE
+	jae @@outside_board
+	mov ebx, MOUSE_TILE_SIZE
+	xor edx, edx
 	div ebx
 	mov ecx, eax
-	
-	xor edx, edx
+
 	mov eax, [@@verPos]
+	cmp eax, SCRHEIGHT
+	jae @@outside_board
+	xor edx, edx
 	div ebx
 	mov edx, eax
-	
+	ret
+
+	@@outside_board:
+	mov ecx, -1
+	mov edx, -1
 	ret
 ENDP calculateIndex
 
@@ -220,41 +250,136 @@ PROC getMouseInput
 ENDP getMouseInput
 
 
+PROC eraseMouse
+    USES eax, ebx, ecx, edx, edi, esi
+
+    cmp [mouse_visible], 1
+    jne @@done
+
+    ; Restore the saved pixels beneath the previous arrow.
+    mov esi, offset mouse_arrow
+    xor ebx, ebx
+    @@rowloop:
+        cmp ebx, MOUSE_CURSOR_HEIGHT
+        jae @@done
+        xor ecx, ecx
+    @@columnloop:
+        cmp ecx, MOUSE_CURSOR_WIDTH
+        jae @@nextrow
+
+        mov al, [esi]
+        inc esi
+        test al, al
+        jz @@nextpixel
+
+        mov edx, [mouse_previous_y]
+        add edx, ebx
+        cmp edx, SCRHEIGHT
+        jae @@nextpixel
+
+        mov eax, [mouse_previous_x]
+        add eax, ecx
+        cmp eax, SCRWIDTH
+        jae @@nextpixel
+
+        imul edx, edx, SCRWIDTH
+        add edx, eax
+        mov edi, VMEMADR
+        add edi, edx
+        mov eax, ebx
+        imul eax, eax, MOUSE_CURSOR_WIDTH
+        add eax, ecx
+        mov al, [mouse_background+eax]
+        mov [edi], al
+
+    @@nextpixel:
+        inc ecx
+        jmp @@columnloop
+    @@nextrow:
+        inc ebx
+        jmp @@rowloop
+    @@done:
+    mov [mouse_visible], 0
+    ret
+ENDP eraseMouse
+
+
 PROC drawMouse
-	ARG 	@@x0:dword, @@y0:dword, @@w:dword, @@h:dword, @@col: dword
-	USES 	eax, ecx, edx, edi ; note: MUL uses edx!
+    ARG @@x0:dword, @@y0:dword, @@col:dword
+    USES eax, ebx, ecx, edx, edi, esi
 
-	; Compute the index of the rectangle's top left corner
-	mov eax, [@@y0]
-	mov edx, SCRWIDTH
-	mul edx
-	add	eax, [@@x0]
+    cmp [mouse_visible], 1
+    jne @@draw_new
+    mov eax, [mouse_previous_x]
+    cmp eax, [@@x0]
+    jne @@erase_previous
+    mov eax, [mouse_previous_y]
+    cmp eax, [@@y0]
+    je @@done
+    @@erase_previous:
+        call eraseMouse
 
-	; Compute top left corner address
-	mov edi, VMEMADR
-	add edi, eax
-	
-	; Plot the top horizontal edge.
-	mov edx, [@@w]	; store width in edx for later reuse
-	mov	ecx, edx
-	mov	eax,[@@col]
-	rep stosb
-	sub edi, edx		; reset edi to left-top corner
-	
-	; plot both vertical edges
-	mov ecx,[@@h]
-	@@vertLoop:
-		mov	[edi],al		; left edge
-		mov	[edi+edx-1],al	; right edge
-		add	edi, SCRWIDTH
-		loop @@vertLoop
-	; edi should point at the bottom-left corner now
-	sub edi, SCRWIDTH
+    @@draw_new:
+    mov esi, offset mouse_arrow
+    xor ebx, ebx
+    @@draw_rowloop:
+        cmp ebx, MOUSE_CURSOR_HEIGHT
+        jae @@save_position
+        xor ecx, ecx
+    @@draw_columnloop:
+        cmp ecx, MOUSE_CURSOR_WIDTH
+        jae @@draw_nextrow
 
-	; Plot the bottom horizontal edge.
-	mov	ecx, edx
-	rep stosb
-	ret
+        mov al, [esi]
+        inc esi
+        test al, al
+        jz @@draw_nextpixel
+
+        mov edx, [@@y0]
+        add edx, ebx
+        cmp edx, SCRHEIGHT
+        jae @@draw_nextpixel
+
+        mov eax, [@@x0]
+        add eax, ecx
+        cmp eax, SCRWIDTH
+        jae @@draw_nextpixel
+
+        imul edx, edx, SCRWIDTH
+        add edx, eax
+        mov edi, VMEMADR
+        add edi, edx
+
+        mov eax, ebx
+        imul eax, eax, MOUSE_CURSOR_WIDTH
+        add eax, ecx
+        mov dl, [edi]
+        ; Save the current pixel so the arrow can be erased on the next move.
+        mov [mouse_background+eax], dl
+        mov al, [esi-1]
+        cmp al, 1
+        jne @@draw_outline
+        mov al, [byte ptr @@col]
+        jmp @@draw_plot
+    @@draw_outline:
+        xor al, al
+    @@draw_plot:
+        mov [edi], al
+
+    @@draw_nextpixel:
+        inc ecx
+        jmp @@draw_columnloop
+    @@draw_nextrow:
+        inc ebx
+        jmp @@draw_rowloop
+    @@save_position:
+    mov eax, [@@x0]
+    mov [mouse_previous_x], eax
+    mov eax, [@@y0]
+    mov [mouse_previous_y], eax
+    mov [mouse_visible], 1
+    @@done:
+    ret
 ENDP drawMouse
 
 
